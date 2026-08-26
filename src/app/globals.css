@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* Same brand tokens as the customer frontend (clothing/src/app/globals.css) —
+   this file is the admin's design-system source of truth, adapted for a
+   data-dense operations UI rather than an editorial storefront. */
+:root {
+  --ink: #2a1116;
+  --paper: #faf5ec;
+  --olive: #ab8752;
+  --stitch: #6d1930;
+  --line: #3a1620;
+  --line-paper: #e7dac6;
+  --maroon-deep: #3d0f1c;
+  --blush: #f3e2d3;
+  --cream: #f7f0e4;
+
+  /* Admin-only surface tokens — a slightly cooler, quieter neutral than the
+     storefront's warm paper, since this UI is read all day, not browsed. */
+  --surface: #ffffff;
+  --surface-sunken: #fbf8f2;
+  --sidebar-bg: #2a1116;
+  --sidebar-ink: #f3e6df;
+  --sidebar-muted: #b99a94;
+  --sidebar-active: #6d1930;
+
+  --success: #2f6b45;
+  --success-bg: #e3efe6;
+  --warning: #8a6a12;
+  --warning-bg: #f4ecd2;
+  --danger: #a3241b;
+  --danger-bg: #f8e2df;
+  --info: #3d6672;
+  --info-bg: #e2edee;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-olive: var(--olive);
+  --color-stitch: var(--stitch);
+  --color-line: var(--line);
+  --color-line-paper: var(--line-paper);
+  --color-maroon-deep: var(--maroon-deep);
+  --color-blush: var(--blush);
+  --color-cream: var(--cream);
+
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-ink: var(--sidebar-ink);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+
+  --font-serif: var(--font-serif);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+
+/* Thin, quiet scrollbars for dense tables/panels rather than the browser default. */
+.admin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-paper) transparent;
+}
+.admin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.admin-scroll::-webkit-scrollbar-thumb {
+  background: var(--line-paper);
+  border-radius: 100px;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes drawer-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.animate-fade-in { animation: fade-in 0.15s ease-out; }
+.animate-slide-up { animation: slide-up 0.18s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-drawer-in { animation: drawer-in 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-toast-in { animation: toast-in 0.2s ease-out; }
+.animate-skeleton { animation: skeleton-pulse 1.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in, .animate-slide-up, .animate-drawer-in, .animate-toast-in, .animate-skeleton {
+    animation: none;
+  }
+}
