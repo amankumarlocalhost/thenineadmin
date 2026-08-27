@@ -22,6 +22,7 @@ const EMPTY = {
   ctaLabel2: "",
   ctaHref2: "",
   imagePosition: "center",
+  imagePositionMobile: "",
   isActive: true,
 };
 
@@ -52,7 +53,7 @@ export default function HeroSliderPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [uploadingId, setUploadingId] = useState(null);
+  const [uploadingKey, setUploadingKey] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const slides = useMemo(
@@ -74,6 +75,7 @@ export default function HeroSliderPage() {
             ctaLabel2: slide.ctaLabel2 || "",
             ctaHref2: slide.ctaHref2 || "",
             imagePosition: slide.imagePosition || "center",
+            imagePositionMobile: slide.imagePositionMobile || "",
             isActive: slide.isActive !== false,
           }
         : EMPTY
@@ -109,24 +111,43 @@ export default function HeroSliderPage() {
     }
   }
 
-  async function upload(slideId, file) {
+  /**
+    * `variant` is "desktop" for the wide poster every slide needs, or
+    * "mobile" for the optional portrait one shown under 768px.
+    */
+  async function upload(slideId, file, variant = "desktop") {
     if (!file) return;
     // Checked here so a 12MB phone photo fails instantly rather than after a
     // long upload the server was always going to reject.
     if (!file.type.startsWith("image/")) return toast.error("Choose an image file.");
     if (file.size > 8 * 1024 * 1024) return toast.error("That image is over 8MB — please use a smaller one.");
 
-    setUploadingId(slideId);
+    setUploadingKey(`${slideId}:${variant}`);
     try {
       const body = new FormData();
       body.append("file", file);
-      await api.postForm(`/content/${slideId}/media`, body);
-      toast.success("Poster uploaded");
+      await api.postForm(`/content/${slideId}/media`, body, { variant });
+      toast.success(variant === "mobile" ? "Mobile poster uploaded" : "Poster uploaded");
       reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Upload failed");
     } finally {
-      setUploadingId(null);
+      setUploadingKey(null);
+    }
+  }
+
+  // Clearing the mobile poster is how a slide goes back to using the desktop
+  // one at every width.
+  async function removeMobilePoster(slideId) {
+    setUploadingKey(`${slideId}:mobile`);
+    try {
+      await api.delete(`/content/${slideId}/media`, undefined, { variant: "mobile" });
+      toast.success("Mobile poster removed");
+      reload();
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Could not remove");
+    } finally {
+      setUploadingKey(null);
     }
   }
 
@@ -214,8 +235,11 @@ export default function HeroSliderPage() {
               index={i}
               total={slides.length}
               busy={busy}
-              uploading={uploadingId === slide._id}
-              onUpload={(file) => upload(slide._id, file)}
+              uploadingDesktop={uploadingKey === `${slide._id}:desktop`}
+              uploadingMobile={uploadingKey === `${slide._id}:mobile`}
+              onUpload={(file) => upload(slide._id, file, "desktop")}
+              onUploadMobile={(file) => upload(slide._id, file, "mobile")}
+              onRemoveMobile={() => removeMobilePoster(slide._id)}
               onEdit={() => open(slide)}
               onToggle={() => toggleActive(slide)}
               onDelete={() => setConfirmDelete(slide)}
@@ -321,6 +345,23 @@ export default function HeroSliderPage() {
             </p>
           </Field>
 
+          <Field label="Mobile framing">
+            <Select
+              value={form.imagePositionMobile}
+              onChange={(e) => setForm((f) => ({ ...f, imagePositionMobile: e.target.value }))}
+            >
+              <option value="">Same as desktop</option>
+              {POSITIONS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </Select>
+            <p className="mt-1 font-body text-xs text-ink/40">
+              Only used when a mobile poster has been uploaded for this slide.
+            </p>
+          </Field>
+
           <label className="flex cursor-pointer items-center gap-2.5">
             <input
               type="checkbox"
@@ -349,55 +390,135 @@ export default function HeroSliderPage() {
   );
 }
 
-function SlideCard({ slide, index, total, busy, uploading, onUpload, onEdit, onToggle, onDelete, onUp, onDown }) {
+function SlideCard({
+  slide,
+  index,
+  total,
+  busy,
+  uploadingDesktop,
+  uploadingMobile,
+  onUpload,
+  onUploadMobile,
+  onRemoveMobile,
+  onEdit,
+  onToggle,
+  onDelete,
+  onUp,
+  onDown,
+}) {
   const fileRef = useRef(null);
+  const mobileFileRef = useRef(null);
   const hasImage = Boolean(slide.media?.url);
+  const hasMobileImage = Boolean(slide.mediaMobile?.url);
+  // Only the desktop poster decides whether a slide can show — the mobile one
+  // is an optional override, never a requirement.
   const live = slide.isActive && hasImage;
 
   return (
     <li>
       <Card padded={false}>
         <div className="flex flex-col gap-4 p-4 md:flex-row">
-          {/* Poster, shown at the hero's own aspect so the framing choice is
-              judged as it will actually appear. */}
-          <div className="relative w-full shrink-0 overflow-hidden rounded-xl bg-surface-sunken md:w-72">
-            <div className="aspect-[16/9]">
-              {hasImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={slide.media.url}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  style={{ objectPosition: slide.imagePosition || "center" }}
-                />
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-1 text-center">
-                  <span className="font-body text-sm text-ink/45">No poster yet</span>
-                  <span className="font-body text-xs text-ink/35">This slide won&apos;t show until one is added</span>
-                </div>
-              )}
+          {/* Both posters, each at the shape it will actually be seen in, so
+              the framing choices can be judged side by side. */}
+          <div className="flex w-full shrink-0 gap-3 md:w-auto">
+            <div className="relative min-w-0 flex-1 overflow-hidden rounded-xl bg-surface-sunken md:w-72 md:flex-none">
+              <div className="aspect-[16/9]">
+                {hasImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={slide.media.url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    style={{ objectPosition: slide.imagePosition || "center" }}
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center gap-1 px-2 text-center">
+                    <span className="font-body text-sm text-ink/45">No poster yet</span>
+                    <span className="font-body text-xs text-ink/35">This slide won&apos;t show until one is added</span>
+                  </div>
+                )}
+              </div>
+
+              <span className="absolute left-2 top-2 rounded bg-ink/70 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-paper">
+                Desktop
+              </span>
+
+              <input
+                id={`upload-${slide._id}`}
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  onUpload(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={uploadingDesktop}
+                onClick={() => fileRef.current?.click()}
+                className="absolute bottom-2 left-2"
+              >
+                {hasImage ? "Replace poster" : "Upload poster"}
+              </Button>
             </div>
 
-            <input
-              id={`upload-${slide._id}`}
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                onUpload(e.target.files?.[0]);
-                e.target.value = "";
-              }}
-            />
-            <Button
-              size="sm"
-              variant="secondary"
-              loading={uploading}
-              onClick={() => fileRef.current?.click()}
-              className="absolute bottom-2 left-2"
-            >
-              {hasImage ? "Replace poster" : "Upload poster"}
-            </Button>
+            {/* Portrait, because that is the shape it has to work in. */}
+            <div className="relative w-28 shrink-0 overflow-hidden rounded-xl bg-surface-sunken md:w-36">
+              <div className="aspect-[3/4]">
+                {hasMobileImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={slide.mediaMobile.url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    style={{ objectPosition: slide.imagePositionMobile || slide.imagePosition || "center" }}
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center gap-1 px-2 text-center">
+                    <span className="font-body text-xs text-ink/45">No mobile poster</span>
+                    <span className="font-body text-[11px] text-ink/35">Desktop one is used</span>
+                  </div>
+                )}
+              </div>
+
+              <span className="absolute left-2 top-2 rounded bg-ink/70 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-paper">
+                Mobile
+              </span>
+
+              {hasMobileImage && (
+                <button
+                  type="button"
+                  onClick={onRemoveMobile}
+                  disabled={uploadingMobile}
+                  className="absolute right-2 top-2 rounded bg-ink/70 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-paper hover:bg-danger disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              )}
+
+              <input
+                ref={mobileFileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  onUploadMobile(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={uploadingMobile}
+                onClick={() => mobileFileRef.current?.click()}
+                className="absolute inset-x-2 bottom-2 justify-center"
+              >
+                {hasMobileImage ? "Replace" : "Upload"}
+              </Button>
+            </div>
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col">

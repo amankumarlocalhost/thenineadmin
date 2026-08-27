@@ -14,7 +14,17 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState, ErrorState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-const EMPTY = { title: "", subtitle: "", body: "", ctaLabel: "", ctaHref: "", sortOrder: 0, isActive: true };
+const EMPTY = {
+  title: "",
+  subtitle: "",
+  body: "",
+  ctaLabel: "",
+  ctaHref: "",
+  imagePosition: "center",
+  imagePositionMobile: "",
+  sortOrder: 0,
+  isActive: true,
+};
 
 export default function ContentPage() {
   usePageTitle("Homepage Content");
@@ -42,6 +52,8 @@ export default function ContentPage() {
       body: item.body || "",
       ctaLabel: item.ctaLabel || "",
       ctaHref: item.ctaHref || "",
+      imagePosition: item.imagePosition || "center",
+      imagePositionMobile: item.imagePositionMobile || "",
       sortOrder: item.sortOrder,
       isActive: item.isActive,
     });
@@ -141,6 +153,24 @@ export default function ContentPage() {
             <Field label="Button Label"><Input value={form.ctaLabel} onChange={(e) => setForm((f) => ({ ...f, ctaLabel: e.target.value }))} /></Field>
             <Field label="Button Link"><Input value={form.ctaHref} onChange={(e) => setForm((f) => ({ ...f, ctaHref: e.target.value }))} placeholder="/category/new-arrivals" /></Field>
           </div>
+          {section === "hero_slide" && (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Desktop framing (e.g. right center)">
+                <Input
+                  value={form.imagePosition}
+                  onChange={(e) => setForm((f) => ({ ...f, imagePosition: e.target.value }))}
+                  placeholder="center"
+                />
+              </Field>
+              <Field label="Mobile framing (blank = same as desktop)">
+                <Input
+                  value={form.imagePositionMobile}
+                  onChange={(e) => setForm((f) => ({ ...f, imagePositionMobile: e.target.value }))}
+                  placeholder="center"
+                />
+              </Field>
+            </div>
+          )}
           <Field label="Display Order"><Input type="number" value={form.sortOrder} onChange={(e) => setForm((f) => ({ ...f, sortOrder: Number(e.target.value) }))} /></Field>
           <label className="flex items-center gap-2 font-body text-sm text-ink">
             <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} className="h-4 w-4 accent-stitch" />
@@ -152,44 +182,104 @@ export default function ContentPage() {
   );
 }
 
-function ContentItemCard({ item, onEdit, onDelete, onToggle, onMediaChange }) {
+/**
+ * One uploadable image on a content block.
+ *
+ * `variant` picks which of the two the backend writes — "desktop" is the
+ * main image every section has, "mobile" is the optional phone/tablet poster
+ * a hero slide can carry as well.
+ */
+function MediaSlot({ item, variant, label, asset, onMediaChange, removable = false }) {
   const toast = useToast();
   const inputRef = useRef(null);
-  const [uploading, setUploading] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   async function handleUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
+    setBusy(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
-      await api.postForm(`/content/${item._id}/media`, formData);
-      toast.success("Media updated");
+      await api.postForm(`/content/${item._id}/media`, formData, { variant });
+      toast.success(`${label} image updated`);
       onMediaChange();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Upload failed");
     } finally {
-      setUploading(false);
+      setBusy(false);
+      // Lets the same file be picked again after a failed attempt.
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  async function handleRemove(e) {
+    // The whole slot is a <label>, so without this the click would re-open
+    // the file picker straight after removing.
+    e.preventDefault();
+    e.stopPropagation();
+    setBusy(true);
+    try {
+      await api.delete(`/content/${item._id}/media`, undefined, { variant });
+      toast.success(`${label} image removed`);
+      onMediaChange();
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Could not remove");
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-line-paper">
-      <label className="relative block h-32 cursor-pointer bg-surface-sunken">
-        {item.media?.url ? (
-          item.media.kind === "video" ? (
-            <video src={item.media.url} className="h-full w-full object-cover" muted />
-          ) : (
-            <img src={item.media.url} alt="" className="h-full w-full object-cover" />
-          )
+    <label className="relative block h-32 cursor-pointer bg-surface-sunken">
+      {asset?.url ? (
+        asset.kind === "video" ? (
+          <video src={asset.url} className="h-full w-full object-cover" muted />
         ) : (
-          <div className="flex h-full items-center justify-center font-mono text-[10px] uppercase tracking-wide text-ink/35">
-            {uploading ? "Uploading…" : "Click to add media"}
-          </div>
-        )}
-        <input ref={inputRef} type="file" accept="image/*,video/*" hidden onChange={handleUpload} disabled={uploading} />
-      </label>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={asset.url} alt="" className="h-full w-full object-cover" />
+        )
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-1 px-2 text-center font-mono text-[10px] uppercase tracking-wide text-ink/35">
+          {busy ? "Working…" : `Click to add ${label.toLowerCase()}`}
+        </div>
+      )}
+
+      <span className="absolute left-1.5 top-1.5 rounded bg-ink/70 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-paper">
+        {label}
+      </span>
+
+      {removable && asset?.url && (
+        <button
+          type="button"
+          onClick={handleRemove}
+          disabled={busy}
+          className="absolute right-1.5 top-1.5 rounded bg-ink/70 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-paper hover:bg-danger"
+        >
+          Remove
+        </button>
+      )}
+
+      <input ref={inputRef} type="file" accept="image/*,video/*" hidden onChange={handleUpload} disabled={busy} />
+    </label>
+  );
+}
+
+function ContentItemCard({ item, onEdit, onDelete, onToggle, onMediaChange }) {
+  // Only the hero carousel is art-directed per device; every other section
+  // renders at one shape, so a second upload there would just be clutter.
+  const hasMobileVariant = item.section === "hero_slide";
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-line-paper">
+      {hasMobileVariant ? (
+        <div className="grid grid-cols-2 gap-px bg-line-paper">
+          <MediaSlot item={item} variant="desktop" label="Desktop" asset={item.media} onMediaChange={onMediaChange} />
+          <MediaSlot item={item} variant="mobile" label="Mobile" asset={item.mediaMobile} onMediaChange={onMediaChange} removable />
+        </div>
+      ) : (
+        <MediaSlot item={item} variant="desktop" label="Image" asset={item.media} onMediaChange={onMediaChange} />
+      )}
       <div className="p-3.5">
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <p className="truncate font-body text-sm text-ink">{item.title || "(untitled)"}</p>

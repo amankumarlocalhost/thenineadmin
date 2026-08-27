@@ -88,8 +88,8 @@ export const api = {
   get: (path, params) => request(path, { method: "GET", params }),
   post: (path, body) => request(path, { method: "POST", body }),
   patch: (path, body) => request(path, { method: "PATCH", body }),
-  delete: (path, body) => request(path, { method: "DELETE", body }),
-  postForm: (path, formData) => request(path, { method: "POST", body: formData, isForm: true }),
+  delete: (path, body, params) => request(path, { method: "DELETE", body, params }),
+  postForm: (path, formData, params) => request(path, { method: "POST", body: formData, isForm: true, params }),
 };
 
 export { API_URL };
