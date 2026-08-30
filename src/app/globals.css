@@ -1,36 +1,50 @@
 @import "tailwindcss";
 
-/* Same brand tokens as the customer frontend (clothing/src/app/globals.css) —
+/* Same brand tokens as the customer frontend (thenines/src/app/globals.css) —
    this file is the admin's design-system source of truth, adapted for a
-   data-dense operations UI rather than an editorial storefront. */
+   data-dense operations UI rather than an editorial storefront. The values
+   below are mirrored verbatim from the frontend so the panel shares one
+   palette; only the admin-only tokens further down are original. */
 :root {
-  --ink: #2a1116;
-  --paper: #faf5ec;
-  --olive: #ab8752;
-  --stitch: #6d1930;
-  --line: #3a1620;
-  --line-paper: #e7dac6;
-  --maroon-deep: #3d0f1c;
-  --blush: #f3e2d3;
-  --cream: #f7f0e4;
+  /* THE NINTH DROP — the six brand colours, declared once. */
+  --noir: #0b0b0d;        /* primary dark */
+  --olive-deep: #1b1f18;  /* deep olive */
+  --brown: #2f2a25;       /* warm brown */
+  --gold: #d4af37;        /* signature gold — the accent, used sparingly */
+  --ivory: #f2efea;       /* soft ivory */
+  --bronze: #a67c52;      /* warm bronze */
 
-  /* Admin-only surface tokens — a slightly cooler, quieter neutral than the
-     storefront's warm paper, since this UI is read all day, not browsed. */
+  /* The names the components already speak — only what they resolve to has
+     changed, so the whole panel re-themes without a single class being touched. */
+  --ink: #0b0b0d;         /* primary dark — primary text */
+  --paper: #f2efea;       /* soft ivory — primary background */
+  --olive: #a67c52;       /* warm bronze — secondary/support color */
+  --stitch: #a67c52;      /* warm bronze — the one accent, used sparingly */
+  --line: #2f2a25;        /* warm brown — hairline rule on dark surfaces */
+  --line-paper: #ded7cb;  /* hairline rule on paper */
+  --maroon-deep: #0b0b0d; /* darkest band */
+  --blush: #e7dfd3;       /* warm blush — decorative panels */
+  --cream: #eae5dc;       /* soft cream — cards & strips */
+
+  /* Admin-only surface tokens — a data-dense operations UI on the brand's
+     ivory ground, with plain-white raised cards since this is read all day. */
   --surface: #ffffff;
-  --surface-sunken: #fbf8f2;
-  --sidebar-bg: #2a1116;
-  --sidebar-ink: #f3e6df;
-  --sidebar-muted: #b99a94;
-  --sidebar-active: #6d1930;
+  --surface-sunken: #f2efea;
+  --sidebar-bg: #0b0b0d;
+  --sidebar-ink: #f2efea;
+  --sidebar-muted: #9c8f7a;
+  --sidebar-active: #a67c52;
 
-  --success: #2f6b45;
-  --success-bg: #e3efe6;
-  --warning: #8a6a12;
-  --warning-bg: #f4ecd2;
-  --danger: #a3241b;
-  --danger-bg: #f8e2df;
-  --info: #3d6672;
-  --info-bg: #e2edee;
+  /* Status tones — the frontend's own earthy account-badge palette
+     (see thenines/src/components/account/OrderCard.js). */
+  --success: #42583f;
+  --success-bg: #e4e8dd;
+  --warning: #7d5c2e;
+  --warning-bg: #ece3d1;
+  --danger: #7a3b32;
+  --danger-bg: #eddfd8;
+  --info: #3f4a44;
+  --info-bg: #e6e3da;
 }
 
 @theme inline {
@@ -43,6 +57,13 @@
   --color-maroon-deep: var(--maroon-deep);
   --color-blush: var(--blush);
   --color-cream: var(--cream);
+
+  --color-noir: var(--noir);
+  --color-olive-deep: var(--olive-deep);
+  --color-brown: var(--brown);
+  --color-gold: var(--gold);
+  --color-ivory: var(--ivory);
+  --color-bronze: var(--bronze);
 
   --color-surface: var(--surface);
   --color-surface-sunken: var(--surface-sunken);

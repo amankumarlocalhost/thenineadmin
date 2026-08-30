@@ -186,7 +186,7 @@ export default function AnnouncementBarPage() {
       <Card padded={false}>
         <p className="px-4 pt-4 font-body text-xs font-semibold uppercase tracking-wider text-ink/45">Preview</p>
         <div className="p-4">
-          <div className="rounded-lg bg-[#3d1420] px-4 py-1.5 text-white/90 md:px-10">
+          <div className="rounded-lg bg-maroon-deep px-4 py-1.5 text-paper/90 md:px-10">
             <div className="flex items-center gap-4">
               <div className="flex flex-1 items-center justify-start gap-5">
                 <PreviewGroup items={live} side="left" />

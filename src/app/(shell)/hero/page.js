@@ -528,7 +528,7 @@ function SlideCard({
             </div>
 
             {slide.eyebrow && (
-              <p className="mt-2 font-body text-[11px] font-semibold uppercase tracking-[0.16em] text-[#b8863f]">
+              <p className="mt-2 font-body text-[11px] font-semibold uppercase tracking-[0.16em] text-gold">
                 ✦ {slide.eyebrow}
               </p>
             )}
