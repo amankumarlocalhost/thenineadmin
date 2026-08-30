@@ -63,7 +63,7 @@ function LoginForm() {
             </p>
           </div>
           <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-ivory/45">
-            The Ninth Drop · Operations
+            The Nine · Operations
           </p>
         </div>
 
