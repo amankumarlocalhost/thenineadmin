@@ -1,6 +1,6 @@
-# THE NINE — Admin
+# THE NINTH DROP — Admin
 
-A separate Next.js project (not nested inside `clothing/`) implementing the operations dashboard for THE NINE storefront. Talks to the same backend (`../clothing/backend`) and the same MongoDB database as the customer frontend — nothing here is a second source of truth.
+A separate Next.js project (not nested inside `clothing/`) implementing the operations dashboard for THE NINTH DROP storefront. Talks to the same backend (`../clothing/backend`) and the same MongoDB database as the customer frontend — nothing here is a second source of truth.
 
 ```
 clothing-landing/

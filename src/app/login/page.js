@@ -52,18 +52,18 @@ function LoginForm() {
       <div className="relative grid min-h-screen lg:grid-cols-2">
         {/* Brand panel — desktop only */}
         <div className="hidden flex-col justify-between p-12 lg:flex xl:p-16">
-          <p className="font-serif text-2xl italic text-ivory">THE NINE</p>
+          <p className="font-serif text-2xl italic text-ivory">THE NINTH DROP</p>
           <div>
             <div className="h-px w-14 bg-gold/70" />
             <h2 className="mt-6 max-w-md font-serif text-3xl leading-snug text-ivory">
               Everything behind the storefront, in one console.
             </h2>
             <p className="mt-4 max-w-sm font-body text-sm text-ivory/60">
-              Orders, inventory, customers and the release calendar — managed by the team, for the team.
+              Orders, inventory, customers and the drop calendar — managed by the team, for the team.
             </p>
           </div>
           <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-ivory/45">
-            The Nine · Operations
+            The Ninth Drop · Operations
           </p>
         </div>
 
@@ -71,7 +71,7 @@ function LoginForm() {
         <div className="flex items-center justify-center px-4 py-12 lg:bg-paper">
           <div className="w-full max-w-sm">
             <div className="mb-8 text-center lg:hidden">
-              <p className="font-serif text-3xl italic text-ivory">THE NINE</p>
+              <p className="font-serif text-3xl italic text-ivory">THE NINTH DROP</p>
               <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.2em] text-ivory/55">
                 Operations Console
               </p>

@@ -24,7 +24,7 @@ export function Sidebar({ open, onClose }) {
         }`}
       >
         <div className="sticky top-0 border-b border-white/10 bg-sidebar-bg px-6 py-6">
-          <p className="font-serif text-xl italic text-sidebar-ink">THE NINE</p>
+          <p className="font-serif text-xl italic text-sidebar-ink">THE NINTH DROP</p>
           <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.2em] text-sidebar-muted">Operations</p>
         </div>
 

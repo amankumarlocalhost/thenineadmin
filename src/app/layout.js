@@ -21,8 +21,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: "THE NINE — Admin",
-  description: "Operations dashboard for THE NINE.",
+  title: "THE NINTH DROP — Admin",
+  description: "Operations dashboard for THE NINTH DROP.",
   robots: { index: false, follow: false },
 };
 
