@@ -59,7 +59,7 @@ function LoginForm() {
               Everything behind the storefront, in one console.
             </h2>
             <p className="mt-4 max-w-sm font-body text-sm text-ivory/60">
-              Orders, inventory, customers and the drop calendar — managed by the team, for the team.
+              Orders, inventory, customers and the release calendar — managed by the team, for the team.
             </p>
           </div>
           <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-ivory/45">
