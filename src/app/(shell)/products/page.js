@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePageTitle } from "@/context/PageTitleContext";
 import { useFetch } from "@/lib/useFetch";
@@ -23,6 +23,32 @@ export default function ProductsPage() {
   const [stockFilter, setStockFilter] = useState("");
   const [category, setCategory] = useState("");
   const [page, setPage] = useState(1);
+
+  // Slug → "Parent › Child" label, so the Categories column reads like the
+  // category tree instead of raw slugs.
+  const fetchTree = useCallback(() => api.get("/categories/tree").then((r) => r.data.items), []);
+  const { data: tree } = useFetch(fetchTree, [fetchTree]);
+  const labelBySlug = useMemo(() => {
+    const map = new Map();
+    (tree || []).forEach((r) => {
+      map.set(r.slug, r.label);
+      r.children.forEach((c) => map.set(c.slug, `${r.label} › ${c.label}`));
+    });
+    return map;
+  }, [tree]);
+
+  // A product carries both a subcategory's slug and its parent's, so drop
+  // the parent from display whenever one of its own children is also
+  // present — the "Girl Dress › Small Top" badge already says "Girl Dress".
+  const childSlugsByParent = useMemo(() => {
+    const map = new Map();
+    (tree || []).forEach((r) => map.set(r.slug, r.children.map((c) => c.slug)));
+    return map;
+  }, [tree]);
+  const displayCategories = useCallback(
+    (categories) => categories.filter((slug) => !(childSlugsByParent.get(slug) || []).some((c) => categories.includes(c))),
+    [childSlugsByParent]
+  );
 
   const fetchProducts = useCallback(
     () =>
@@ -61,7 +87,23 @@ export default function ProductsPage() {
     { key: "stock", header: "Stock", render: (p) => (
         <span className={p.stock === 0 ? "text-danger" : p.stock <= 10 ? "text-warning" : "text-ink"}>{p.stock}</span>
       ) },
-    { key: "categories", header: "Categories", render: (p) => <span className="text-xs text-ink/55">{p.categories.slice(0, 3).join(", ")}</span> },
+    {
+      key: "categories",
+      header: "Categories",
+      render: (p) => (
+        <div className="flex flex-wrap gap-1">
+          {displayCategories(p.categories).length === 0 ? (
+            <span className="text-xs text-ink/35">Unfiled</span>
+          ) : (
+            displayCategories(p.categories).map((slug) => (
+              <Badge key={slug} tone="neutral">
+                {labelBySlug.get(slug) || slug}
+              </Badge>
+            ))
+          )}
+        </div>
+      ),
+    },
     { key: "status", header: "Status", render: (p) => (
         <div className="flex flex-wrap gap-1.5">
           <Badge tone={p.isActive ? "success" : "neutral"}>{p.isActive ? "Active" : "Inactive"}</Badge>
