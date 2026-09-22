@@ -9,6 +9,7 @@ import { formatINR } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { SearchInput, Select } from "@/components/ui/Field";
+import { CategoryFilter } from "@/components/domain/CategoryFilter";
 import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/EmptyState";
@@ -20,11 +21,20 @@ export default function ProductsPage() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("");
+  const [category, setCategory] = useState("");
   const [page, setPage] = useState(1);
 
   const fetchProducts = useCallback(
-    () => api.get("/products/admin", { q: q || undefined, status: statusFilter || undefined, stock: stockFilter || undefined, page, limit: 20 }),
-    [q, statusFilter, stockFilter, page]
+    () =>
+      api.get("/products/admin", {
+        q: q || undefined,
+        status: statusFilter || undefined,
+        stock: stockFilter || undefined,
+        category: category || undefined,
+        page,
+        limit: 20,
+      }),
+    [q, statusFilter, stockFilter, category, page]
   );
   const { data: res, loading, error, reload } = useFetch(fetchProducts, [fetchProducts]);
 
@@ -78,6 +88,7 @@ export default function ProductsPage() {
             <option value="low">Low stock</option>
             <option value="out">Out of stock</option>
           </Select>
+          <CategoryFilter value={category} onChange={(v) => { setPage(1); setCategory(v); }} />
         </div>
         <Button onClick={() => router.push("/products/new")}>+ New Product</Button>
       </div>

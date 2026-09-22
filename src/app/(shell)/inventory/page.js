@@ -9,6 +9,7 @@ import { formatDateTime } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
 import { Button, IconButton } from "@/components/ui/Button";
 import { SearchInput, Select, Field, Input, Textarea } from "@/components/ui/Field";
+import { CategoryFilter } from "@/components/domain/CategoryFilter";
 import { DataTable } from "@/components/ui/DataTable";
 import { Drawer, Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
@@ -35,13 +36,21 @@ export default function InventoryPage() {
 
   const [q, setQ] = useState("");
   const [stockFilter, setStockFilter] = useState("");
+  const [category, setCategory] = useState("");
   const [page, setPage] = useState(1);
   const [historyProduct, setHistoryProduct] = useState(null);
   const [adjustTarget, setAdjustTarget] = useState(null); // { product, mode: "sell" | "restock" | "set" }
 
   const fetchProducts = useCallback(
-    () => api.get("/products/admin", { q: q || undefined, stock: stockFilter || undefined, page, limit: 20 }),
-    [q, stockFilter, page]
+    () =>
+      api.get("/products/admin", {
+        q: q || undefined,
+        stock: stockFilter || undefined,
+        category: category || undefined,
+        page,
+        limit: 20,
+      }),
+    [q, stockFilter, category, page]
   );
   const { data: res, loading, error, reload } = useFetch(fetchProducts, [fetchProducts]);
   const threshold = 10;
@@ -131,6 +140,7 @@ export default function InventoryPage() {
               <option value="low">Low stock</option>
               <option value="out">Out of stock</option>
             </Select>
+            <CategoryFilter value={category} onChange={(v) => { setPage(1); setCategory(v); }} />
           </div>
           <p className="font-mono text-[11px] text-ink/45">Low stock threshold: {threshold} units</p>
         </div>
