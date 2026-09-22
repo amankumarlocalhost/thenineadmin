@@ -140,3 +140,22 @@ body {
     animation: none;
   }
 }
+
+/* Shipping label printing — scoped to the Generate Shipping Label feature
+   (ShippingLabelModal.js). Hides the rest of the admin UI so only the label
+   itself (#shipping-label-print) reaches the printer. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #shipping-label-print,
+  #shipping-label-print * {
+    visibility: visible;
+  }
+  #shipping-label-print {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    box-shadow: none;
+  }
+}

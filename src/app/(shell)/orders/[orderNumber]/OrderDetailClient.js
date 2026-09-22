@@ -15,6 +15,7 @@ import { Modal } from "@/components/ui/Modal";
 import { ErrorState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/domain/StatusBadges";
+import { ShippingLabelModal } from "@/components/domain/ShippingLabelModal";
 
 const NON_CANCELLABLE = new Set(["Shipped", "In Transit", "Out for Delivery", "Delivered", "Cancelled", "Returned", "Refunded"]);
 
@@ -33,6 +34,7 @@ export default function OrderDetailClient({ orderNumber }) {
 
   const [statusModal, setStatusModal] = useState(false);
   const [refundModal, setRefundModal] = useState(false);
+  const [labelModal, setLabelModal] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
 
@@ -72,6 +74,9 @@ export default function OrderDetailClient({ orderNumber }) {
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => setStatusModal(true)}>
             Update Status
+          </Button>
+          <Button variant="secondary" onClick={() => setLabelModal(true)}>
+            Generate Shipping Label
           </Button>
           {order.paymentStatus === "Paid" || order.paymentStatus === "Partially Refunded" ? (
             <Button variant="danger" onClick={() => setRefundModal(true)}>
@@ -225,6 +230,7 @@ export default function OrderDetailClient({ orderNumber }) {
 
       <StatusUpdateModal open={statusModal} onClose={() => setStatusModal(false)} order={order} onSaved={reload} />
       <RefundModal open={refundModal} onClose={() => setRefundModal(false)} order={order} onSaved={reload} />
+      <ShippingLabelModal open={labelModal} onClose={() => setLabelModal(false)} orderNumber={orderNumber} />
     </div>
   );
 }
