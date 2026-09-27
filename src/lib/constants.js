@@ -72,4 +72,21 @@ export const CONTENT_SECTIONS = [
   { value: "promo_banner", label: "Promo Banners" },
   { value: "category_circle", label: "Category Circles" },
   { value: "instagram_shot", label: "Instagram Gallery" },
+  { value: "home_hero", label: "Homepage Hero" },
+  { value: "home_poster", label: "Heritage Poster" },
+  { value: "store_info", label: "Store Details" },
 ];
+
+// What each field means for the homepage blocks that reuse the generic
+// content form. Shown above the form so an editor knows where text lands.
+export const CONTENT_SECTION_HINTS = {
+  home_hero:
+    "Eyebrow = small line above the headline. Title = headline. Subtitle = italic second line. Body = short description. Button 1 / Button 2 = the two actions. Left photo / Right photo = the two side images.",
+  home_poster:
+    "Eyebrow = small label (e.g. THE HERITAGE EDIT). Title = headline — use \" | \" to split it around the script word (e.g. Tradition | Today.). Subtitle = the script word (e.g. meets). Body = paragraph. Button = main action.",
+  store_info:
+    "Title = store name. Body = address, one line per row. Subtitle = contact email. Eyebrow = small label (e.g. FIND US IN JIND). Button Link = Google Maps directions URL.",
+};
+
+// Sections whose blocks use the eyebrow line and a second button.
+export const SECTIONS_WITH_EXTRAS = new Set(["hero_slide", "home_hero", "home_poster", "store_info"]);

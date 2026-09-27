@@ -5,7 +5,7 @@ import { usePageTitle } from "@/context/PageTitleContext";
 import { useFetch } from "@/lib/useFetch";
 import { api, ApiClientError } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
-import { CONTENT_SECTIONS } from "@/lib/constants";
+import { CONTENT_SECTIONS, CONTENT_SECTION_HINTS, SECTIONS_WITH_EXTRAS } from "@/lib/constants";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Field";
@@ -15,11 +15,14 @@ import { EmptyState, ErrorState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 const EMPTY = {
+  eyebrow: "",
   title: "",
   subtitle: "",
   body: "",
   ctaLabel: "",
   ctaHref: "",
+  ctaLabel2: "",
+  ctaHref2: "",
   imagePosition: "center",
   imagePositionMobile: "",
   sortOrder: 0,
@@ -47,11 +50,14 @@ export default function ContentPage() {
   function openEdit(item) {
     setEditing(item);
     setForm({
+      eyebrow: item.eyebrow || "",
       title: item.title || "",
       subtitle: item.subtitle || "",
       body: item.body || "",
       ctaLabel: item.ctaLabel || "",
       ctaHref: item.ctaHref || "",
+      ctaLabel2: item.ctaLabel2 || "",
+      ctaHref2: item.ctaHref2 || "",
       imagePosition: item.imagePosition || "center",
       imagePositionMobile: item.imagePositionMobile || "",
       sortOrder: item.sortOrder,
@@ -146,6 +152,12 @@ export default function ContentPage() {
         }
       >
         <div className="flex flex-col gap-4">
+          {CONTENT_SECTION_HINTS[section] && (
+            <p className="rounded-lg bg-surface-sunken px-3 py-2 font-body text-xs leading-relaxed text-ink/60">{CONTENT_SECTION_HINTS[section]}</p>
+          )}
+          {SECTIONS_WITH_EXTRAS.has(section) && (
+            <Field label="Eyebrow"><Input value={form.eyebrow} maxLength={60} onChange={(e) => setForm((f) => ({ ...f, eyebrow: e.target.value }))} /></Field>
+          )}
           <Field label="Title"><Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} /></Field>
           <Field label="Subtitle"><Input value={form.subtitle} onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))} /></Field>
           <Field label="Body"><Textarea value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} /></Field>
@@ -153,6 +165,12 @@ export default function ContentPage() {
             <Field label="Button Label"><Input value={form.ctaLabel} onChange={(e) => setForm((f) => ({ ...f, ctaLabel: e.target.value }))} /></Field>
             <Field label="Button Link"><Input value={form.ctaHref} onChange={(e) => setForm((f) => ({ ...f, ctaHref: e.target.value }))} placeholder="/category/new-arrivals" /></Field>
           </div>
+          {SECTIONS_WITH_EXTRAS.has(section) && section !== "store_info" && (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Button 2 Label"><Input value={form.ctaLabel2} onChange={(e) => setForm((f) => ({ ...f, ctaLabel2: e.target.value }))} /></Field>
+              <Field label="Button 2 Link"><Input value={form.ctaHref2} onChange={(e) => setForm((f) => ({ ...f, ctaHref2: e.target.value }))} placeholder="/category/women" /></Field>
+            </div>
+          )}
           {section === "hero_slide" && (
             <div className="grid grid-cols-2 gap-4">
               <Field label="Desktop framing (e.g. right center)">
@@ -268,14 +286,16 @@ function MediaSlot({ item, variant, label, asset, onMediaChange, removable = fal
 function ContentItemCard({ item, onEdit, onDelete, onToggle, onMediaChange }) {
   // Only the hero carousel is art-directed per device; every other section
   // renders at one shape, so a second upload there would just be clutter.
-  const hasMobileVariant = item.section === "hero_slide";
+  const hasMobileVariant = item.section === "hero_slide" || item.section === "home_hero";
+  // The homepage hero stores its two side photos in the same two slots.
+  const [firstLabel, secondLabel] = item.section === "home_hero" ? ["Left photo", "Right photo"] : ["Desktop", "Mobile"];
 
   return (
     <div className="overflow-hidden rounded-xl border border-line-paper">
       {hasMobileVariant ? (
         <div className="grid grid-cols-2 gap-px bg-line-paper">
-          <MediaSlot item={item} variant="desktop" label="Desktop" asset={item.media} onMediaChange={onMediaChange} />
-          <MediaSlot item={item} variant="mobile" label="Mobile" asset={item.mediaMobile} onMediaChange={onMediaChange} removable />
+          <MediaSlot item={item} variant="desktop" label={firstLabel} asset={item.media} onMediaChange={onMediaChange} />
+          <MediaSlot item={item} variant="mobile" label={secondLabel} asset={item.mediaMobile} onMediaChange={onMediaChange} removable />
         </div>
       ) : (
         <MediaSlot item={item} variant="desktop" label="Image" asset={item.media} onMediaChange={onMediaChange} />
