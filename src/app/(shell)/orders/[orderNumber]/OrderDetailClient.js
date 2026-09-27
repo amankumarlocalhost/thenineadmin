@@ -17,8 +17,6 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/domain/StatusBadges";
 import { ShippingLabelModal } from "@/components/domain/ShippingLabelModal";
 
-const NON_CANCELLABLE = new Set(["Shipped", "In Transit", "Out for Delivery", "Delivered", "Cancelled", "Returned", "Refunded"]);
-
 export default function OrderDetailClient({ orderNumber }) {
   usePageTitle(`Order #${orderNumber}`);
   const toast = useToast();
@@ -27,7 +25,8 @@ export default function OrderDetailClient({ orderNumber }) {
   const { data: order, loading, error, reload } = useFetch(fetchOrder, [fetchOrder]);
 
   const fetchAttempts = useCallback(
-    () => (order?.paymentMethod !== "cod" ? api.get(`/payments/admin/${orderNumber}/attempts`).then((r) => r.data.attempts) : Promise.resolve([])),
+    // Gateway attempts only exist for online payments.
+    () => (["upi", "card"].includes(order?.paymentMethod) ? api.get(`/payments/admin/${orderNumber}/attempts`).then((r) => r.data.attempts) : Promise.resolve([])),
     [orderNumber, order?.paymentMethod]
   );
   const { data: attempts } = useFetch(fetchAttempts, [fetchAttempts, Boolean(order)]);
@@ -78,6 +77,14 @@ export default function OrderDetailClient({ orderNumber }) {
           <Button variant="secondary" onClick={() => setLabelModal(true)}>
             Generate Shipping Label
           </Button>
+          {order.paymentMethod === "manual" && (
+            <Link
+              href={`/payment-proofs?q=${encodeURIComponent(order.orderNumber)}`}
+              className="inline-flex items-center rounded-full border border-line-paper bg-surface px-5 py-2.5 font-body text-xs font-semibold uppercase tracking-[0.08em] text-ink hover:border-stitch hover:text-stitch"
+            >
+              Payment Proofs
+            </Link>
+          )}
           {order.paymentStatus === "Paid" || order.paymentStatus === "Partially Refunded" ? (
             <Button variant="danger" onClick={() => setRefundModal(true)}>
               Process Refund
@@ -108,6 +115,9 @@ export default function OrderDetailClient({ orderNumber }) {
               <Row label="Shipping" value={order.shipping === 0 ? "Free" : formatINR(order.shipping)} />
               {order.discount > 0 && <Row label={`Discount${order.couponCode ? ` (${order.couponCode})` : ""}`} value={`-${formatINR(order.discount)}`} />}
               {order.refundAmount > 0 && <Row label="Refunded" value={`-${formatINR(order.refundAmount)}`} />}
+              {order.refundStatus && order.refundStatus !== "None" && (
+                <Row label="Refund status" value={<Link href={`/refunds?q=${encodeURIComponent(order.orderNumber)}`} className="text-stitch hover:underline">{order.refundStatus}</Link>} />
+              )}
               <Row label="Total" value={formatINR(order.total)} strong />
             </div>
           </Card>
@@ -252,7 +262,6 @@ function StatusUpdateModal({ open, onClose, order, onSaved }) {
   const [trackingCarrier, setTrackingCarrier] = useState(order.trackingCarrier || "");
   const [trackingUrl, setTrackingUrl] = useState(order.trackingUrl || "");
   const [saving, setSaving] = useState(false);
-  const cancellable = !NON_CANCELLABLE.has(order.orderStatus);
 
   async function save() {
     setSaving(true);
@@ -282,15 +291,16 @@ function StatusUpdateModal({ open, onClose, order, onSaved }) {
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={save} loading={saving} disabled={status === "Cancelled" && !cancellable}>Save</Button>
+          <Button onClick={save} loading={saving}>Save</Button>
         </>
       }
     >
       <div className="flex flex-col gap-4">
         <Field label="Status">
           <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-            {ORDER_STATUSES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+            {/* Only the moves the backend will accept — it sends them with the order. */}
+            {[order.orderStatus, ...(order.allowedNextStatuses ?? ORDER_STATUSES.filter((s) => s !== order.orderStatus))].map((s) => (
+              <option key={s} value={s}>{s === order.orderStatus ? `${s} (current)` : s}</option>
             ))}
           </Select>
         </Field>

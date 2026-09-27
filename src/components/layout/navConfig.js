@@ -15,6 +15,7 @@ export const NAV_GROUPS = [
     items: [
       { href: "/orders", label: "Orders", icon: "▤" },
       { href: "/payments", label: "Payments", icon: "◈" },
+      { href: "/payment-proofs", label: "Payment Proofs", icon: "✓" },
       { href: "/shipments", label: "Shipments", icon: "➤" },
       { href: "/refunds", label: "Returns & Refunds", icon: "↺" },
     ],
@@ -38,7 +39,6 @@ export const NAV_GROUPS = [
   {
     label: "Content",
     items: [
-      { href: "/hero", label: "Hero Slider", icon: "◧" },
       { href: "/announcements", label: "Announcement Bar", icon: "▭" },
       { href: "/content", label: "Homepage Content", icon: "▨" },
       { href: "/media", label: "Media Library", icon: "▣" },
@@ -58,6 +58,7 @@ export const NAV_GROUPS = [
     items: [
       { href: "/notifications", label: "Notifications", icon: "✉" },
       { href: "/activity-logs", label: "Activity Logs", icon: "≡" },
+      { href: "/store-settings", label: "Store Settings", icon: "⚑" },
       { href: "/settings", label: "Settings & Team", icon: "⚙" },
     ],
   },

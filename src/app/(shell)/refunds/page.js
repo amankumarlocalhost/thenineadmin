@@ -15,19 +15,8 @@ import { Modal } from "@/components/ui/Modal";
 import { ErrorState } from "@/components/ui/EmptyState";
 import { RefundStatusBadge } from "@/components/domain/CustomerStatusBadge";
 
-// Where each state can go next. Encoded here so the UI can't offer a
-// transition the backend would reject — `completed` and `rejected` are
-// terminal.
-const NEXT_STATUSES = {
-  requested: ["under_review", "approved", "rejected"],
-  under_review: ["approved", "rejected"],
-  approved: ["processing", "completed", "rejected"],
-  processing: ["completed", "failed"],
-  failed: ["processing", "rejected"],
-  completed: [],
-  rejected: [],
-};
-
+// Which moves a refund allows comes from the backend with each row
+// (`allowedNextStatuses`), so this page can't offer one it would reject.
 const STATUS_LABELS = {
   under_review: "Move to review",
   approved: "Approve",
@@ -40,14 +29,22 @@ const STATUS_LABELS = {
 export default function RefundsPage() {
   usePageTitle("Returns & Refunds");
   const { show } = useToast();
+  const [method, setMethod] = useState("");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [active, setActive] = useState(null);
 
   const fetchRefunds = useCallback(
-    () => api.get("/refunds/admin/all", { q: q || undefined, status: status || undefined, page, limit: 20 }),
-    [q, status, page]
+    () =>
+      api.get("/refunds/admin/all", {
+        q: q || undefined,
+        status: status || undefined,
+        method: method || undefined,
+        page,
+        limit: 20,
+      }),
+    [q, status, method, page]
   );
   const { data: res, loading, error, reload } = useFetch(fetchRefunds, [fetchRefunds]);
 
@@ -65,7 +62,25 @@ export default function RefundsPage() {
     { key: "customer", header: "Customer", render: (r) => r.userEmail },
     { key: "amount", header: "Amount", render: (r) => formatINR(r.amount) },
     { key: "reason", header: "Reason", render: (r) => <span className="text-xs text-ink/60">{r.reason}</span> },
-    { key: "status", header: "Status", render: (r) => <RefundStatusBadge status={r.status} /> },
+    {
+      key: "status",
+      header: "Status",
+      render: (r) => (
+        <div className="flex flex-col gap-1">
+          <RefundStatusBadge status={r.status} />
+          {r.status === "failed" && r.failureReason && (
+            <span className="max-w-[220px] truncate text-[11px] text-danger" title={r.failureReason}>
+              {r.failureReason}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "method",
+      header: "Paid back via",
+      render: (r) => <span className="text-xs text-ink/60">{r.method === "gateway" ? "Razorpay" : "Manual"}</span>,
+    },
     {
       key: "requested",
       header: "Requested",
@@ -107,6 +122,18 @@ export default function RefundsPage() {
             <option value="rejected">Rejected</option>
             <option value="failed">Failed</option>
           </Select>
+          <Select
+            value={method}
+            onChange={(e) => {
+              setPage(1);
+              setMethod(e.target.value);
+            }}
+            className="w-44"
+          >
+            <option value="">Any payout method</option>
+            <option value="gateway">Razorpay</option>
+            <option value="manual">Manual</option>
+          </Select>
         </div>
         <DataTable
           columns={columns}
@@ -142,7 +169,23 @@ function RefundModal({ refund, onClose, onDone }) {
   const [error, setError] = useState("");
 
   if (!refund) return null;
-  const options = NEXT_STATUSES[refund.status] || [];
+  const options = refund.allowedNextStatuses || [];
+  // Razorpay can send the money itself for orders it took payment for.
+  const canSendToGateway = refund.paymentProvider === "razorpay" && ["approved", "failed"].includes(refund.status);
+  const canSync = refund.method === "gateway" && refund.status === "processing";
+
+  async function gatewayAction(path) {
+    setError("");
+    setSaving(true);
+    try {
+      const res = await api.post(`/refunds/admin/${refund.refundId}/${path}`);
+      onDone(res.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function submit() {
     setError("");
@@ -178,6 +221,16 @@ function RefundModal({ refund, onClose, onDone }) {
           <Button variant="secondary" onClick={onClose}>
             Close
           </Button>
+          {canSync && (
+            <Button variant="secondary" onClick={() => gatewayAction("sync")} loading={saving}>
+              Check status
+            </Button>
+          )}
+          {canSendToGateway && (
+            <Button variant="secondary" onClick={() => gatewayAction("gateway")} loading={saving}>
+              {refund.status === "failed" ? "Retry via Razorpay" : "Send via Razorpay"}
+            </Button>
+          )}
           {options.length > 0 && (
             <Button variant={next === "rejected" ? "danger" : "primary"} onClick={submit} loading={saving}>
               Apply
@@ -210,6 +263,28 @@ function RefundModal({ refund, onClose, onDone }) {
             <dt className="text-ink/45">Reason given</dt>
             <dd className="text-ink">{refund.reason}</dd>
           </div>
+          <div>
+            <dt className="text-ink/45">Paid back via</dt>
+            <dd className="text-ink">{refund.method === "gateway" ? "Razorpay refund API" : "Manual payout"}</dd>
+          </div>
+          <div>
+            <dt className="text-ink/45">Gateway / payout reference</dt>
+            <dd className="font-mono text-xs text-ink">{refund.gatewayRefundId || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-ink/45">Created</dt>
+            <dd className="text-ink">{formatDateTime(refund.requestedAt || refund.createdAt)}</dd>
+          </div>
+          <div>
+            <dt className="text-ink/45">Processed</dt>
+            <dd className="text-ink">{formatDateTime(refund.processedAt)}</dd>
+          </div>
+          {refund.failureReason && (
+            <div className="col-span-2 rounded-lg bg-danger-bg px-3 py-2">
+              <dt className="text-xs text-danger">Failure reason</dt>
+              <dd className="text-xs text-danger">{refund.failureReason}</dd>
+            </div>
+          )}
         </dl>
 
         {refund.statusHistory?.length > 0 && (
@@ -226,10 +301,19 @@ function RefundModal({ refund, onClose, onDone }) {
           </div>
         )}
 
-        {options.length === 0 ? (
-          <p className="rounded-lg bg-line-paper/40 px-3 py-2 font-body text-xs text-ink/60">
-            This refund is {refund.status} and can&apos;t be changed further.
+        {canSync && (
+          <p className="rounded-lg bg-info-bg px-3 py-2 font-body text-xs text-info">
+            Sent to Razorpay — it completes or fails on Razorpay&apos;s answer (webhook, or the automatic check every
+            10 minutes). &ldquo;Check status&rdquo; asks now.
           </p>
+        )}
+        {error && !options.length && <p className="font-body text-xs text-danger">{error}</p>}
+        {options.length === 0 ? (
+          !canSync && (
+            <p className="rounded-lg bg-line-paper/40 px-3 py-2 font-body text-xs text-ink/60">
+              This refund is {refund.status} and can&apos;t be changed further.
+            </p>
+          )
         ) : (
           <>
             <Field label="Next status">
@@ -244,7 +328,7 @@ function RefundModal({ refund, onClose, onDone }) {
             </Field>
 
             {next === "completed" && (
-              <Field label="Razorpay refund id">
+              <Field label="Payout / Razorpay refund reference">
                 <Input
                   value={gatewayRefundId}
                   onChange={(e) => setGatewayRefundId(e.target.value)}
@@ -263,8 +347,8 @@ function RefundModal({ refund, onClose, onDone }) {
 
             {next === "completed" && (
               <p className="rounded-lg bg-warning-bg px-3 py-2 font-body text-xs text-warning">
-                Marking this completed updates the order and payment totals. Push the money back on the Razorpay
-                dashboard first — this records the refund, it doesn&apos;t move it.
+                Marking this completed records a refund you&apos;ve already paid out yourself and updates the order and
+                payment totals — it doesn&apos;t move money. To have Razorpay send it, use &ldquo;Send via Razorpay&rdquo;.
               </p>
             )}
           </>

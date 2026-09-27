@@ -61,7 +61,7 @@ export default function PaymentsPage() {
         </Select>
         <Select value={paymentMethod} onChange={(e) => { setPage(1); setPaymentMethod(e.target.value); }} className="w-36">
           <option value="">All methods</option>
-          {["card", "upi", "cod"].map((m) => <option key={m} value={m}>{m.toUpperCase()}</option>)}
+          {[["card", "Card"], ["upi", "UPI"], ["cod", "COD"], ["manual", "Bank transfer"]].map(([m, label]) => <option key={m} value={m}>{label}</option>)}
         </Select>
         <Input type="number" placeholder="Min ₹" value={amountMin} onChange={(e) => { setPage(1); setAmountMin(e.target.value); }} className="w-24" />
         <Input type="number" placeholder="Max ₹" value={amountMax} onChange={(e) => { setPage(1); setAmountMax(e.target.value); }} className="w-24" />

@@ -66,7 +66,6 @@ export const DATE_PRESETS = [
 ];
 
 export const CONTENT_SECTIONS = [
-  { value: "hero_slide", label: "Hero Slider" },
   { value: "announcement", label: "Announcement Bar" },
   { value: "editorial_card", label: "Editorial Cards" },
   { value: "promo_banner", label: "Promo Banners" },

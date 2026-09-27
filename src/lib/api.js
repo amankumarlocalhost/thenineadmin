@@ -84,12 +84,30 @@ async function request(path, { method = "GET", body, params, isForm = false } = 
   return payload;
 }
 
+// For endpoints that answer with a file rather than JSON (payment proofs):
+// same session and refresh handling, resolved as a Blob.
+async function requestBlob(path, params) {
+  let res = await rawFetch(path, { method: "GET", params });
+  if (res.status === 401 && (await refreshSession())) res = await rawFetch(path, { method: "GET", params });
+  if (!res.ok) {
+    let message = null;
+    try {
+      message = (await res.json())?.message;
+    } catch {
+      // not JSON
+    }
+    throw new ApiClientError(message || `Request failed (${res.status})`, res.status);
+  }
+  return res.blob();
+}
+
 export const api = {
   get: (path, params) => request(path, { method: "GET", params }),
   post: (path, body) => request(path, { method: "POST", body }),
   patch: (path, body) => request(path, { method: "PATCH", body }),
   delete: (path, body, params) => request(path, { method: "DELETE", body, params }),
   postForm: (path, formData, params) => request(path, { method: "POST", body: formData, isForm: true, params }),
+  getBlob: (path, params) => requestBlob(path, params),
 };
 
 export { API_URL };
