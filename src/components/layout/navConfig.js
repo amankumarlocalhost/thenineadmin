@@ -18,6 +18,7 @@ export const NAV_GROUPS = [
       { href: "/payment-proofs", label: "Payment Proofs", icon: "✓" },
       { href: "/shipments", label: "Shipments", icon: "➤" },
       { href: "/refunds", label: "Returns & Refunds", icon: "↺" },
+      { href: "/reports", label: "Payment Reports", icon: "⎘" },
     ],
   },
   {
